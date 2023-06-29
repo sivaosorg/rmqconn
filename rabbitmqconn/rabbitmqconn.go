@@ -62,3 +62,8 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 	instance = NewRabbitMq().SetConn(conn).SetChannel(channel)
 	return instance, *s
 }
+
+func (c *RabbitMq) Close() {
+	c.channel.Close()
+	c.conn.Close()
+}
