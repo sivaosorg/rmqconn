@@ -31,6 +31,11 @@ func (r *RabbitMq) SetChannel(value *amqp.Channel) *RabbitMq {
 	return r
 }
 
+func (r *RabbitMq) SetClose(value bool) *RabbitMq {
+	r.close = value
+	return r
+}
+
 func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 	s := dbx.NewDbx().SetDebugMode(config.DebugMode)
 	if !config.IsEnabled {
@@ -64,6 +69,7 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 }
 
 func (c *RabbitMq) Close() {
-	c.channel.Close()
+	c.SetClose(true)
 	c.conn.Close()
+	c.channel.Close()
 }

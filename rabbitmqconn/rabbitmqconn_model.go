@@ -7,4 +7,5 @@ import (
 type RabbitMq struct {
 	conn    *amqp.Connection `json:"-"`
 	channel *amqp.Channel    `json:"-"`
+	close   bool             `json:"-"`
 }
