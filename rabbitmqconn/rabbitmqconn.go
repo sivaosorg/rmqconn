@@ -31,6 +31,11 @@ func (r *RabbitMq) SetChannel(value *amqp.Channel) *RabbitMq {
 	return r
 }
 
+func (r *RabbitMq) SetConfig(value rabbitmqx.RabbitMqConfig) *RabbitMq {
+	r.config = value
+	return r
+}
+
 func (r *RabbitMq) SetClose(value bool) *RabbitMq {
 	r.close = value
 	return r
@@ -64,7 +69,7 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 	}
 	pid := os.Getpid()
 	s.SetConnected(true).SetMessage("Connection established").SetPid(pid).SetNewInstance(true)
-	instance = NewRabbitMq().SetConn(conn).SetChannel(channel)
+	instance = NewRabbitMq().SetConn(conn).SetChannel(channel).SetConfig(config)
 	return instance, *s
 }
 
