@@ -6,7 +6,7 @@ import (
 )
 
 type RabbitMq struct {
-	config  rabbitmqx.RabbitMqConfig `json:"-"`
+	Config  rabbitmqx.RabbitMqConfig `json:"config,omitempty"`
 	conn    *amqp.Connection         `json:"-"`
 	channel *amqp.Channel            `json:"-"`
 	close   bool                     `json:"-"`

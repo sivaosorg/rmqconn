@@ -7,6 +7,7 @@ import (
 	"github.com/sivaosorg/govm/dbx"
 	"github.com/sivaosorg/govm/logger"
 	"github.com/sivaosorg/govm/rabbitmqx"
+	"github.com/sivaosorg/govm/utils"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -32,13 +33,17 @@ func (r *RabbitMq) SetChannel(value *amqp.Channel) *RabbitMq {
 }
 
 func (r *RabbitMq) SetConfig(value rabbitmqx.RabbitMqConfig) *RabbitMq {
-	r.config = value
+	r.Config = value
 	return r
 }
 
 func (r *RabbitMq) SetClose(value bool) *RabbitMq {
 	r.close = value
 	return r
+}
+
+func (r *RabbitMq) Json() string {
+	return utils.ToJson(r)
 }
 
 func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
