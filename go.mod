@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/rabbitmq/amqp091-go v1.8.1
-	github.com/sivaosorg/govm v1.2.0
+	github.com/sivaosorg/govm v1.2.3
 )
 
 require (
