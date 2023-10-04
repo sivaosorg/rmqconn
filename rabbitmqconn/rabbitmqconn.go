@@ -58,7 +58,11 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 		s.SetConnected(true).SetNewInstance(false)
 		return instance, *s
 	}
-	conn, err := amqp.Dial(config.ToUrlConn())
+	if config.Timeout == 0 {
+		config.SetTimeout(10)
+	}
+	// conn, err := amqp.Dial(config.ToUrlConn())
+	conn, err := amqp.DialConfig(config.ToUrlConn(), amqp.Config{Dial: amqp.DefaultDial(config.Timeout)})
 	if err != nil {
 		s.SetConnected(false).SetError(err).SetMessage(err.Error())
 		return &RabbitMq{}, *s
