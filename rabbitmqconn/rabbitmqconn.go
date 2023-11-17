@@ -42,6 +42,14 @@ func (r *RabbitMq) SetClose(value bool) *RabbitMq {
 	return r
 }
 
+func (r *RabbitMq) GetConn() *amqp.Connection {
+	return r.conn
+}
+
+func (r *RabbitMq) GetChannel() *amqp.Channel {
+	return r.channel
+}
+
 func (r *RabbitMq) Json() string {
 	return utils.ToJson(r)
 }
