@@ -30,29 +30,29 @@ type RabbitMqCoreService interface {
 }
 
 type rabbitmqCoreServiceImpl struct {
-	rabbitmqConn *RabbitMq `json:"-"`
+	c *RabbitMq
 }
 
 type rabbitmqServiceImpl struct {
-	rabbitmqConn *RabbitMq `json:"-"`
+	c *RabbitMq
 }
 
-func NewRabbitMqService(rabbitmqConn *RabbitMq) RabbitMqService {
+func NewRabbitMqService(c *RabbitMq) RabbitMqService {
 	s := &rabbitmqServiceImpl{
-		rabbitmqConn: rabbitmqConn,
+		c: c,
 	}
 	return s
 }
 
-func NewRabbitMqCoreService(rabbitmqConn *RabbitMq) RabbitMqCoreService {
+func NewRabbitMqCoreService(c *RabbitMq) RabbitMqCoreService {
 	s := &rabbitmqCoreServiceImpl{
-		rabbitmqConn: rabbitmqConn,
+		c: c,
 	}
 	return s
 }
 
 func (r *rabbitmqServiceImpl) CreateTopic(topic string) error {
-	err := r.rabbitmqConn.channel.ExchangeDeclare(
+	err := r.c.channel.ExchangeDeclare(
 		topic,               // name exchange
 		amqp.ExchangeFanout, // type exchange
 		true,                // Durable
@@ -65,7 +65,7 @@ func (r *rabbitmqServiceImpl) CreateTopic(topic string) error {
 }
 
 func (r *rabbitmqServiceImpl) RemoveTopic(topic string) error {
-	err := r.rabbitmqConn.channel.ExchangeDelete(
+	err := r.c.channel.ExchangeDelete(
 		topic,
 		false,
 		false,
@@ -74,7 +74,7 @@ func (r *rabbitmqServiceImpl) RemoveTopic(topic string) error {
 }
 
 func (r *rabbitmqServiceImpl) Producer(topic string, message interface{}) error {
-	err := r.rabbitmqConn.channel.ExchangeDeclare(
+	err := r.c.channel.ExchangeDeclare(
 		topic,               // name exchange
 		amqp.ExchangeFanout, // type exchange
 		true,                // Durable
@@ -86,7 +86,7 @@ func (r *rabbitmqServiceImpl) Producer(topic string, message interface{}) error 
 	if err != nil {
 		return err
 	}
-	err = r.rabbitmqConn.channel.Publish(
+	err = r.c.channel.Publish(
 		topic,
 		"",
 		false,
@@ -100,7 +100,7 @@ func (r *rabbitmqServiceImpl) Producer(topic string, message interface{}) error 
 }
 
 func (r *rabbitmqServiceImpl) Consumer(topic, queue string, callback func(next amqp.Delivery)) error {
-	err := r.rabbitmqConn.channel.ExchangeDeclare(
+	err := r.c.channel.ExchangeDeclare(
 		topic,               // name exchange
 		amqp.ExchangeFanout, // type exchange
 		true,                // Durable
@@ -112,7 +112,7 @@ func (r *rabbitmqServiceImpl) Consumer(topic, queue string, callback func(next a
 	if err != nil {
 		return err
 	}
-	q, err := r.rabbitmqConn.channel.QueueDeclare(
+	q, err := r.c.channel.QueueDeclare(
 		queue, // name queue
 		true,  // Durable
 		false, // Delete when unused
@@ -123,7 +123,7 @@ func (r *rabbitmqServiceImpl) Consumer(topic, queue string, callback func(next a
 	if err != nil {
 		return err
 	}
-	err = r.rabbitmqConn.channel.QueueBind(
+	err = r.c.channel.QueueBind(
 		q.Name, // name queue
 		"",     // Routing key
 		topic,  // name exchange
@@ -133,7 +133,7 @@ func (r *rabbitmqServiceImpl) Consumer(topic, queue string, callback func(next a
 	if err != nil {
 		return err
 	}
-	msg, err := r.rabbitmqConn.channel.Consume(
+	msg, err := r.c.channel.Consume(
 		q.Name, // name queue
 		"",     // Consumer
 		true,   // Auto-acknowledge
@@ -157,7 +157,7 @@ func (r *rabbitmqServiceImpl) Consumer(topic, queue string, callback func(next a
 }
 
 func (r *rabbitmqCoreServiceImpl) RemoveExchange(exchangeName string) error {
-	err := r.rabbitmqConn.channel.ExchangeDelete(
+	err := r.c.channel.ExchangeDelete(
 		exchangeName,
 		false,
 		false,
@@ -166,15 +166,15 @@ func (r *rabbitmqCoreServiceImpl) RemoveExchange(exchangeName string) error {
 }
 
 func (r *rabbitmqCoreServiceImpl) DeclareExchangeConf() error {
-	rabbitmqx.RabbitMqExchangeConfigValidator(&r.rabbitmqConn.Config.Message.Exchange)
-	return r.DeclareExchangeWith(r.rabbitmqConn.Config.Message.Exchange.Name,
-		r.rabbitmqConn.Config.Message.Exchange.Kind,
-		r.rabbitmqConn.Config.Message.Exchange.Durable)
+	rabbitmqx.RabbitMqExchangeConfigValidator(&r.c.Config.Message.Exchange)
+	return r.DeclareExchangeWith(r.c.Config.Message.Exchange.Name,
+		r.c.Config.Message.Exchange.Kind,
+		r.c.Config.Message.Exchange.Durable)
 }
 
 func (r *rabbitmqCoreServiceImpl) DeclareExchangeWith(exchangeName string, exchangeType string, durable bool) error {
 	config := rabbitmqx.NewRabbitMqExchangeConfig().SetName(exchangeName).SetKind(exchangeType).SetDurable(durable)
-	err := r.rabbitmqConn.channel.ExchangeDeclare(
+	err := r.c.channel.ExchangeDeclare(
 		config.Name,    // name exchange
 		config.Kind,    // type exchange
 		config.Durable, // Durable
@@ -187,13 +187,13 @@ func (r *rabbitmqCoreServiceImpl) DeclareExchangeWith(exchangeName string, excha
 }
 
 func (r *rabbitmqCoreServiceImpl) DeclareQueueConf() (amqp.Queue, error) {
-	rabbitmqx.RabbitMqQueueConfigValidator(&r.rabbitmqConn.Config.Message.Queue)
-	return r.DeclareQueueWith(r.rabbitmqConn.Config.Message.Queue.Name, r.rabbitmqConn.Config.Message.Queue.Durable)
+	rabbitmqx.RabbitMqQueueConfigValidator(&r.c.Config.Message.Queue)
+	return r.DeclareQueueWith(r.c.Config.Message.Queue.Name, r.c.Config.Message.Queue.Durable)
 }
 
 func (r *rabbitmqCoreServiceImpl) DeclareQueueWith(queueName string, durable bool) (amqp.Queue, error) {
 	config := rabbitmqx.NewRabbitMqQueueConfig().SetName(queueName).SetDurable(durable)
-	q, err := r.rabbitmqConn.channel.QueueDeclare(
+	q, err := r.c.channel.QueueDeclare(
 		config.Name,    // name queue
 		config.Durable, // Durable
 		false,          // Delete when unused
@@ -205,15 +205,15 @@ func (r *rabbitmqCoreServiceImpl) DeclareQueueWith(queueName string, durable boo
 }
 
 func (r *rabbitmqCoreServiceImpl) BindQueueExchangeConf() error {
-	rabbitmqx.RabbitMqExchangeConfigValidator(&r.rabbitmqConn.Config.Message.Exchange)
-	rabbitmqx.RabbitMqQueueConfigValidator(&r.rabbitmqConn.Config.Message.Queue)
-	return r.BindQueueExchangeWith(r.rabbitmqConn.Config.Message.Queue.Name, r.rabbitmqConn.Config.Message.Exchange.Name)
+	rabbitmqx.RabbitMqExchangeConfigValidator(&r.c.Config.Message.Exchange)
+	rabbitmqx.RabbitMqQueueConfigValidator(&r.c.Config.Message.Queue)
+	return r.BindQueueExchangeWith(r.c.Config.Message.Queue.Name, r.c.Config.Message.Exchange.Name)
 }
 
 func (r *rabbitmqCoreServiceImpl) BindQueueExchangeWith(queueName, exchangeName string) error {
 	exchange := rabbitmqx.NewRabbitMqExchangeConfig().SetName(exchangeName)
 	queue := rabbitmqx.NewRabbitMqQueueConfig().SetName(queueName)
-	err := r.rabbitmqConn.channel.QueueBind(
+	err := r.c.channel.QueueBind(
 		queue.Name,    // name queue
 		"",            // Routing key
 		exchange.Name, // name exchange
@@ -224,13 +224,13 @@ func (r *rabbitmqCoreServiceImpl) BindQueueExchangeWith(queueName, exchangeName 
 }
 
 func (r *rabbitmqCoreServiceImpl) ProduceConf(message interface{}) error {
-	if !r.rabbitmqConn.Config.Message.IsEnabled {
+	if !r.c.Config.Message.IsEnabled {
 		return fmt.Errorf("ProduceConf, message unavailable (enabled = false)")
 	}
-	rabbitmqx.RabbitMqExchangeConfigValidator(&r.rabbitmqConn.Config.Message.Exchange)
-	return r.ProduceWith(r.rabbitmqConn.Config.Message.Exchange.Name,
-		r.rabbitmqConn.Config.Message.Exchange.Kind,
-		r.rabbitmqConn.Config.Message.Exchange.Durable,
+	rabbitmqx.RabbitMqExchangeConfigValidator(&r.c.Config.Message.Exchange)
+	return r.ProduceWith(r.c.Config.Message.Exchange.Name,
+		r.c.Config.Message.Exchange.Kind,
+		r.c.Config.Message.Exchange.Durable,
 		message)
 }
 
@@ -239,7 +239,12 @@ func (r *rabbitmqCoreServiceImpl) ProduceWith(exchangeName string, exchangeType 
 	if err != nil {
 		return err
 	}
-	err = r.rabbitmqConn.channel.Publish(
+	if r.c.Config.DebugMode {
+		_logger.Info(fmt.Sprintf("Producer is running for messages (exchange: %s) outgoing data: %v", exchangeName, utils.ToJson(message)))
+	} else {
+		_logger.Info(fmt.Sprintf("Producer is running for messages (exchange: %s)", exchangeName))
+	}
+	err = r.c.channel.Publish(
 		exchangeName,
 		"",
 		false,
@@ -253,15 +258,15 @@ func (r *rabbitmqCoreServiceImpl) ProduceWith(exchangeName string, exchangeType 
 }
 
 func (r *rabbitmqCoreServiceImpl) ConsumeConf(callback func(next amqp.Delivery)) error {
-	if !r.rabbitmqConn.Config.Message.IsEnabled {
+	if !r.c.Config.Message.IsEnabled {
 		return fmt.Errorf("ConsumeConf, message unavailable (enabled = false)")
 	}
-	rabbitmqx.RabbitMqExchangeConfigValidator(&r.rabbitmqConn.Config.Message.Exchange)
-	rabbitmqx.RabbitMqQueueConfigValidator(&r.rabbitmqConn.Config.Message.Queue)
-	return r.ConsumeWith(r.rabbitmqConn.Config.Message.Queue.Name,
-		r.rabbitmqConn.Config.Message.Exchange.Name,
-		r.rabbitmqConn.Config.Message.Exchange.Kind,
-		r.rabbitmqConn.Config.Message.Exchange.Durable,
+	rabbitmqx.RabbitMqExchangeConfigValidator(&r.c.Config.Message.Exchange)
+	rabbitmqx.RabbitMqQueueConfigValidator(&r.c.Config.Message.Queue)
+	return r.ConsumeWith(r.c.Config.Message.Queue.Name,
+		r.c.Config.Message.Exchange.Name,
+		r.c.Config.Message.Exchange.Kind,
+		r.c.Config.Message.Exchange.Durable,
 		callback)
 }
 
@@ -278,7 +283,7 @@ func (r *rabbitmqCoreServiceImpl) ConsumeWith(queueName string, exchangeName, ex
 	if err != nil {
 		return err
 	}
-	msg, err := r.rabbitmqConn.channel.Consume(
+	msg, err := r.c.channel.Consume(
 		q.Name, // name queue
 		"",     // Consumer
 		true,   // Auto-acknowledge
@@ -293,10 +298,14 @@ func (r *rabbitmqCoreServiceImpl) ConsumeWith(queueName string, exchangeName, ex
 	forever := make(chan bool)
 	go func() {
 		for d := range msg {
-			callback(d)
+			if callback != nil {
+				callback(d)
+			} else {
+				callbackDefault(d)
+			}
 		}
 	}()
-	_logger.Info("Consumer is waiting for messages (%s)...", exchangeName)
+	_logger.Info(fmt.Sprintf("Consumer is waiting for messages (%s)...", exchangeName))
 	<-forever
 	return nil
 }
