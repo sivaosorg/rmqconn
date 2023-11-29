@@ -93,7 +93,7 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 		_logger.Info(fmt.Sprintf("Connected successfully to rabbitmq:: %s", config.ToUrlConn()))
 	}
 	pid := os.Getpid()
-	s.SetConnected(true).SetMessage("Connection successfully").SetPid(pid).SetNewInstance(true)
+	s.SetConnected(true).SetMessage("Connected successfully").SetPid(pid).SetNewInstance(true)
 	instance = NewRabbitMq().SetConn(conn).SetChannel(channel).SetConfig(config)
 	return instance, *s
 }
