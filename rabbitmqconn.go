@@ -13,8 +13,7 @@ import (
 )
 
 var (
-	instance *RabbitMq
-	_logger  = logger.NewLogger()
+	_logger = logger.NewLogger()
 )
 
 func NewRabbitMq() *RabbitMq {
@@ -60,16 +59,13 @@ func (r *RabbitMq) Json() string {
 }
 
 func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
+	instance := NewRabbitMq()
 	s := dbx.NewDbx().SetDebugMode(config.DebugMode)
 	if !config.IsEnabled {
 		s.SetConnected(false).
 			SetMessage("RabbitMQ unavailable").
 			SetError(fmt.Errorf(s.Message))
-		instance = NewRabbitMq().SetState(*s)
-		return instance, *s
-	}
-	if instance != nil {
-		s.SetConnected(true).SetNewInstance(false)
+		instance.SetState(*s)
 		return instance, *s
 	}
 	if config.Timeout == 0 {
@@ -79,13 +75,13 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 	conn, err := amqp.DialConfig(config.ToUrlConn(), amqp.Config{Dial: amqp.DefaultDial(config.Timeout)})
 	if err != nil {
 		s.SetConnected(false).SetError(err).SetMessage(err.Error())
-		instance = NewRabbitMq().SetState(*s)
+		instance.SetState(*s)
 		return instance, *s
 	}
 	channel, err := conn.Channel()
 	if err != nil {
 		s.SetConnected(false).SetError(err).SetMessage(err.Error())
-		instance = NewRabbitMq().SetState(*s)
+		instance.SetState(*s)
 		return instance, *s
 	}
 	if config.DebugMode {
@@ -94,7 +90,7 @@ func NewClient(config rabbitmqx.RabbitMqConfig) (*RabbitMq, dbx.Dbx) {
 	}
 	pid := os.Getpid()
 	s.SetConnected(true).SetMessage("Connected successfully").SetPid(pid).SetNewInstance(true)
-	instance = NewRabbitMq().SetConn(conn).SetChannel(channel).SetConfig(config)
+	instance.SetConn(conn).SetChannel(channel).SetConfig(config).SetState(*s)
 	return instance, *s
 }
 
