@@ -8,7 +8,7 @@ package main
 import (
 	"github.com/sivaosorg/govm/logger"
 	"github.com/sivaosorg/govm/rabbitmqx"
-	"github.com/sivaosorg/rabbitmqconn/rabbitmqconn"
+	"github.com/sivaosorg/rabbitmqconn"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

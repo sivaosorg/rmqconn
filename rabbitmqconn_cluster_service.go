@@ -1,6 +1,7 @@
 package rabbitmqconn
 
 import (
+	"context"
 	"fmt"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -108,7 +109,8 @@ func (s *rabbitMqClusterServiceImpl) Produce(message rabbitmqx.RabbitMqMessageCo
 	} else {
 		_logger.Info(fmt.Sprintf("Producer is running for messages (exchange: %s, queue: %s)", message.Exchange.Name, message.Queue.Name))
 	}
-	err = s.c.channel.Publish(
+	err = s.c.channel.PublishWithContext(
+		context.Background(),
 		message.Exchange.Name,
 		"",
 		false,
