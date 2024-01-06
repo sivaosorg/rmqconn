@@ -1,4 +1,4 @@
-module github.com/sivaosorg/rabbitmqconn
+module github.com/sivaosorg/rmqconn
 
 go 1.20
 

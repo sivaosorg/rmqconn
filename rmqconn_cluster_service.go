@@ -1,4 +1,4 @@
-package rabbitmqconn
+package rmqconn
 
 import (
 	"context"
