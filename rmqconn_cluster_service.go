@@ -14,7 +14,7 @@ var callbackDefault = func(next amqp.Delivery) {
 	logger.Debugf(fmt.Sprintf("Received exchange: %v, message (content-type: %s): %s", next.Exchange, next.ContentType, string(next.Body)))
 }
 
-type RabbitMqClusterService interface {
+type RmqClusterService interface {
 	RemoveExchange(message rabbitmqx.RabbitMqMessageConfig) error
 	DeclareExchange(message rabbitmqx.RabbitMqMessageConfig) error
 	DeclareQueue(message rabbitmqx.RabbitMqMessageConfig) (amqp.Queue, error)
@@ -29,17 +29,17 @@ type RabbitMqClusterService interface {
 	ConsumeBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, callback func(next amqp.Delivery)) error
 }
 
-type rabbitMqClusterServiceImpl struct {
+type rmqClusterServiceImpl struct {
 	c *RabbitMq
 }
 
-func NewRabbitMqClusterService(c *RabbitMq) RabbitMqClusterService {
-	return &rabbitMqClusterServiceImpl{
+func NewRmqClusterService(c *RabbitMq) RmqClusterService {
+	return &rmqClusterServiceImpl{
 		c: c,
 	}
 }
 
-func (s *rabbitMqClusterServiceImpl) RemoveExchange(message rabbitmqx.RabbitMqMessageConfig) error {
+func (s *rmqClusterServiceImpl) RemoveExchange(message rabbitmqx.RabbitMqMessageConfig) error {
 	if !message.IsEnabled {
 		return fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
@@ -51,7 +51,7 @@ func (s *rabbitMqClusterServiceImpl) RemoveExchange(message rabbitmqx.RabbitMqMe
 	return err
 }
 
-func (s *rabbitMqClusterServiceImpl) DeclareExchange(message rabbitmqx.RabbitMqMessageConfig) error {
+func (s *rmqClusterServiceImpl) DeclareExchange(message rabbitmqx.RabbitMqMessageConfig) error {
 	if !message.IsEnabled {
 		return fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
@@ -67,7 +67,7 @@ func (s *rabbitMqClusterServiceImpl) DeclareExchange(message rabbitmqx.RabbitMqM
 	return err
 }
 
-func (s *rabbitMqClusterServiceImpl) DeclareQueue(message rabbitmqx.RabbitMqMessageConfig) (amqp.Queue, error) {
+func (s *rmqClusterServiceImpl) DeclareQueue(message rabbitmqx.RabbitMqMessageConfig) (amqp.Queue, error) {
 	if !message.IsEnabled {
 		return amqp.Queue{}, fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
@@ -82,7 +82,7 @@ func (s *rabbitMqClusterServiceImpl) DeclareQueue(message rabbitmqx.RabbitMqMess
 	return q, err
 }
 
-func (s *rabbitMqClusterServiceImpl) BindQueueExchange(message rabbitmqx.RabbitMqMessageConfig) error {
+func (s *rmqClusterServiceImpl) BindQueueExchange(message rabbitmqx.RabbitMqMessageConfig) error {
 	if !message.IsEnabled {
 		return fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
@@ -96,7 +96,7 @@ func (s *rabbitMqClusterServiceImpl) BindQueueExchange(message rabbitmqx.RabbitM
 	return err
 }
 
-func (s *rabbitMqClusterServiceImpl) Produce(message rabbitmqx.RabbitMqMessageConfig, data interface{}) error {
+func (s *rmqClusterServiceImpl) Produce(message rabbitmqx.RabbitMqMessageConfig, data interface{}) error {
 	if !message.IsEnabled {
 		return fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
@@ -123,7 +123,7 @@ func (s *rabbitMqClusterServiceImpl) Produce(message rabbitmqx.RabbitMqMessageCo
 	return err
 }
 
-func (s *rabbitMqClusterServiceImpl) Consume(message rabbitmqx.RabbitMqMessageConfig, callback func(next amqp.Delivery)) error {
+func (s *rmqClusterServiceImpl) Consume(message rabbitmqx.RabbitMqMessageConfig, callback func(next amqp.Delivery)) error {
 	if !message.IsEnabled {
 		return fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
@@ -166,7 +166,7 @@ func (s *rabbitMqClusterServiceImpl) Consume(message rabbitmqx.RabbitMqMessageCo
 	return nil
 }
 
-func (s *rabbitMqClusterServiceImpl) GetByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string) (rabbitmqx.RabbitMqMessageConfig, error) {
+func (s *rmqClusterServiceImpl) GetByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string) (rabbitmqx.RabbitMqMessageConfig, error) {
 	if len(clusters) == 0 {
 		return rabbitmqx.RabbitMqMessageConfig{}, fmt.Errorf("Cluster is required")
 	}
@@ -180,7 +180,7 @@ func (s *rabbitMqClusterServiceImpl) GetByMap(clusters map[string]rabbitmqx.Rabb
 	return v, nil
 }
 
-func (s *rabbitMqClusterServiceImpl) GetBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string) (rabbitmqx.MultiTenantRabbitMqConfig, error) {
+func (s *rmqClusterServiceImpl) GetBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string) (rabbitmqx.MultiTenantRabbitMqConfig, error) {
 	if len(clusters) == 0 {
 		return rabbitmqx.MultiTenantRabbitMqConfig{}, fmt.Errorf("Cluster is required")
 	}
@@ -195,7 +195,7 @@ func (s *rabbitMqClusterServiceImpl) GetBySlice(clusters []rabbitmqx.MultiTenant
 	return rabbitmqx.MultiTenantRabbitMqConfig{}, fmt.Errorf("Rabbitmq conf not found for key: %s", key)
 }
 
-func (s *rabbitMqClusterServiceImpl) ProduceByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string, data interface{}) error {
+func (s *rmqClusterServiceImpl) ProduceByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string, data interface{}) error {
 	v, err := s.GetByMap(clusters, key)
 	if err != nil {
 		return err
@@ -203,7 +203,7 @@ func (s *rabbitMqClusterServiceImpl) ProduceByMap(clusters map[string]rabbitmqx.
 	return s.Produce(v, data)
 }
 
-func (s *rabbitMqClusterServiceImpl) ConsumeByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string, callback func(next amqp.Delivery)) error {
+func (s *rmqClusterServiceImpl) ConsumeByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string, callback func(next amqp.Delivery)) error {
 	v, err := s.GetByMap(clusters, key)
 	if err != nil {
 		return err
@@ -211,7 +211,7 @@ func (s *rabbitMqClusterServiceImpl) ConsumeByMap(clusters map[string]rabbitmqx.
 	return s.Consume(v, callback)
 }
 
-func (s *rabbitMqClusterServiceImpl) ProduceBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, data interface{}) error {
+func (s *rmqClusterServiceImpl) ProduceBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, data interface{}) error {
 	v, err := s.GetBySlice(clusters, key)
 	if err != nil {
 		return err
@@ -222,7 +222,7 @@ func (s *rabbitMqClusterServiceImpl) ProduceBySlice(clusters []rabbitmqx.MultiTe
 	return s.ProduceByMap(v.Config.Clusters, key, data)
 }
 
-func (s *rabbitMqClusterServiceImpl) ConsumeBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, callback func(next amqp.Delivery)) error {
+func (s *rmqClusterServiceImpl) ConsumeBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, callback func(next amqp.Delivery)) error {
 	v, err := s.GetBySlice(clusters, key)
 	if err != nil {
 		return err
