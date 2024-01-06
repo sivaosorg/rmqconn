@@ -33,6 +33,12 @@ func TestServiceProduceMessage(t *testing.T) {
 		logger.Errorf("Producing message got an error", err)
 		return
 	}
+	err = svc.Produce(*message, "Hello 2 RabbitMQ!")
+	if err != nil {
+		logger.Errorf("Producing message got an error", err)
+		return
+	}
+	svc.ZookeeperExchangeNoop()
 	logger.Infof("Produced message successfully")
 }
 

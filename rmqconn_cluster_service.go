@@ -2,12 +2,24 @@ package rmqconn
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/sivaosorg/govm/logger"
 	"github.com/sivaosorg/govm/rabbitmqx"
 	"github.com/sivaosorg/govm/utils"
+)
+
+var (
+	zookeeperExchanges map[string]struct {
+		L int
+		T int64
+	} = make(map[string]struct {
+		L int
+		T int64
+	})
 )
 
 var callbackDefault = func(next amqp.Delivery) {
@@ -27,6 +39,14 @@ type RmqClusterService interface {
 	ConsumeByMap(clusters map[string]rabbitmqx.RabbitMqMessageConfig, key string, callback func(next amqp.Delivery)) error
 	ProduceBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, data interface{}) error
 	ConsumeBySlice(clusters []rabbitmqx.MultiTenantRabbitMqConfig, key string, usableMessageDefault bool, callback func(next amqp.Delivery)) error
+	ZookeeperExchangeGenKey(message rabbitmqx.RabbitMqMessageConfig) string
+	ZookeeperExchangeKeyExists(message rabbitmqx.RabbitMqMessageConfig) bool
+	ZookeeperExchangePushKey(message rabbitmqx.RabbitMqMessageConfig)
+	ZookeeperExchangePushKeyIfNeeded(message rabbitmqx.RabbitMqMessageConfig)
+	ZookeeperExchangeRemoveKey(message rabbitmqx.RabbitMqMessageConfig) bool
+	ZookeeperExchangeSize() int
+	ZookeeperExchangeDestroy()
+	ZookeeperExchangeNoop()
 }
 
 type rmqClusterServiceImpl struct {
@@ -100,16 +120,19 @@ func (s *rmqClusterServiceImpl) Produce(message rabbitmqx.RabbitMqMessageConfig,
 	if !message.IsEnabled {
 		return fmt.Errorf("Message (exchange: %s, queue: %s) unavailable", message.Exchange.Name, message.Queue.Name)
 	}
-	err := s.DeclareExchange(message)
-	if err != nil {
-		return err
+	if !s.ZookeeperExchangeKeyExists(message) {
+		err := s.DeclareExchange(message)
+		if err != nil {
+			return err
+		}
+		s.ZookeeperExchangePushKey(message)
 	}
 	if s.c.Config.DebugMode {
 		_logger.Info(fmt.Sprintf("Producer is running for messages (exchange: %s, queue: %s) outgoing data: %v", message.Exchange.Name, message.Queue.Name, utils.ToJson(data)))
 	} else {
 		_logger.Info(fmt.Sprintf("Producer is running for messages (exchange: %s, queue: %s)", message.Exchange.Name, message.Queue.Name))
 	}
-	err = s.c.channel.PublishWithContext(
+	err := s.c.channel.PublishWithContext(
 		context.Background(),
 		message.Exchange.Name,
 		"",
@@ -231,4 +254,69 @@ func (s *rmqClusterServiceImpl) ConsumeBySlice(clusters []rabbitmqx.MultiTenantR
 		return s.Consume(v.Config.Message, callback)
 	}
 	return s.ConsumeByMap(v.Config.Clusters, key, callback)
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangeGenKey(message rabbitmqx.RabbitMqMessageConfig) string {
+	// the form of key
+	// ex:n:ABC:k:fanout
+	// which exchange has name and kind
+	form := fmt.Sprintf("ex:n:%s:k:%s", message.Exchange.Name, message.Exchange.Kind)
+	return form
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangeKeyExists(message rabbitmqx.RabbitMqMessageConfig) bool {
+	if len(zookeeperExchanges) == 0 || zookeeperExchanges == nil {
+		return false
+	}
+	if !message.IsEnabled {
+		return false
+	}
+	key := s.ZookeeperExchangeGenKey(message)
+	_, ok := zookeeperExchanges[key]
+	return ok
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangePushKey(message rabbitmqx.RabbitMqMessageConfig) {
+	if len(zookeeperExchanges) == 0 || zookeeperExchanges == nil {
+		zookeeperExchanges = make(map[string]struct {
+			L int
+			T int64
+		})
+	}
+	key := s.ZookeeperExchangeGenKey(message)
+	zookeeperExchanges[key] = struct {
+		L int
+		T int64
+	}{
+		L: binary.Size([]byte(key)),
+		T: time.Now().UnixMilli(),
+	}
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangePushKeyIfNeeded(message rabbitmqx.RabbitMqMessageConfig) {
+	if s.ZookeeperExchangeKeyExists(message) {
+		return
+	}
+	s.ZookeeperExchangePushKey(message)
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangeRemoveKey(message rabbitmqx.RabbitMqMessageConfig) bool {
+	if !s.ZookeeperExchangeKeyExists(message) {
+		return false
+	}
+	key := s.ZookeeperExchangeGenKey(message)
+	delete(zookeeperExchanges, key)
+	return true
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangeSize() int {
+	return len(zookeeperExchanges)
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangeDestroy() {
+	zookeeperExchanges = nil
+}
+
+func (s *rmqClusterServiceImpl) ZookeeperExchangeNoop() {
+	logger.Debugf("Zookeeper Exchange(s): %v", zookeeperExchanges)
 }
