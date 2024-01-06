@@ -1,77 +1,78 @@
-# RabbitMQConn
+# rmqconn
 
-## Example RabbitMQ Pub.Sub
+![GitHub contributors](https://img.shields.io/github/contributors/sivaosorg/gocell)
+![GitHub followers](https://img.shields.io/github/followers/sivaosorg)
+![GitHub User's stars](https://img.shields.io/github/stars/pnguyen215)
 
-```go
-package main
+A simple RabbitMQ service implementation with support for declaring/removing exchanges, queues, producing messages, and consuming messages.
 
-import (
-	"github.com/sivaosorg/govm/logger"
-	"github.com/sivaosorg/govm/rabbitmqx"
-	"github.com/sivaosorg/rmqconn"
+## Table of Contents
 
-	amqp "github.com/rabbitmq/amqp091-go"
-)
+- [rmqconn](#rmqconn)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Modules](#modules)
+    - [Running Tests](#running-tests)
+    - [Tidying up Modules](#tidying-up-modules)
+    - [Upgrading Dependencies](#upgrading-dependencies)
+    - [Cleaning Dependency Cache](#cleaning-dependency-cache)
 
-func main() {
-	test001()
-}
+## Introduction
 
-func test001() {
-	c, s := rabbitmqconn.NewClient(*rabbitmqx.GetRabbitMqConfigSample().SetDebugMode(false).SetEnabled(true).SetPort(5672))
-	// c, s := rabbitmqconn.NewClient(*rabbitmqx.GetRabbitMqConfigSample().SetDebugMode(false).SetEnabled(true).SetPort(5672).SetUsername("guest1").SetPassword("guest1").SetUrlConn(""))
-	logger.Infof("rabbitmq state:: %s", s.Json())
-	defer c.Close()
-	service := rabbitmqconn.NewRabbitMqService(c)
-	topic := "topic_sample"
-	err := service.CreateTopic(topic)
-	if err != nil {
-		panic(err)
-	}
-	err = service.Producer(topic, "Hello 1 RabbitMQ!")
-	if err != nil {
-		panic(err)
-	}
-	err = service.Producer(topic, "Hello 2 RabbitMQ!")
-	if err != nil {
-		panic(err)
-	}
-	callback := func(next amqp.Delivery) {
-		logger.Infof("Received message - Topic: %s, Message: %s\n", next.Exchange, string(next.Body))
-	}
-	err = service.Consumer(topic, "queue_sample", callback)
+This repository contains a RabbitMQ service implementation with essential functionalities for handling exchanges, queues, producing, and consuming messages. It is designed to be a lightweight and flexible solution for integrating RabbitMQ into your projects.
 
-}
+## Prerequisites
 
-func test002() {
-	c, s := rabbitmqconn.NewClient(*rabbitmqx.GetRabbitMqConfigSample().SetDebugMode(false).SetEnabled(true).SetPort(5672))
-	c.Config.Message.SetEnabled(true)
-	logger.Infof("rabbitmq state:: %s", s.Json())
-	logger.Infof("rabbitmq connection:: %s", c.Json())
-	defer c.Close()
-	service := rabbitmqconn.NewRabbitMqCoreService(c)
-	// err := service.RemoveExchange(c.Config.Message.Exchange.Name)
-	err := service.DeclareExchangeConf()
-	if err != nil {
-		panic(err)
-	}
+Golang version v1.20
 
-	err = service.ProduceConf("Hello 1 RabbitMQ!")
-	err = service.ProduceConf(s)
-	if err != nil {
-		panic(err)
-	}
-	err = service.ProduceConf("Hello 2 RabbitMQ!")
-	if err != nil {
-		panic(err)
-	}
-	err = service.ProduceConf("Hello 3 RabbitMQ!")
-	if err != nil {
-		panic(err)
-	}
-	callback := func(next amqp.Delivery) {
-		logger.Debugf("Received Exchange Name: %v, Message: %s\n", next.Exchange, string(next.Body))
-	}
-	err = service.ConsumeConf(callback)
-}
+## Installation
+
+- Latest version
+
+```bash
+go get -u github.com/sivaosorg/rmqconn@latest
+```
+
+- Use a specific version (tag)
+
+```bash
+go get github.com/sivaosorg/rmqconn@v0.0.1
+```
+
+## Modules
+
+Explain how users can interact with the various modules.
+
+### Running Tests
+
+To run tests for all modules, use the following command:
+
+```bash
+make test
+```
+
+### Tidying up Modules
+
+To tidy up the project's Go modules, use the following command:
+
+```bash
+make tidy
+```
+
+### Upgrading Dependencies
+
+To upgrade project dependencies, use the following command:
+
+```bash
+make deps-upgrade
+```
+
+### Cleaning Dependency Cache
+
+To clean the Go module cache, use the following command:
+
+```bash
+make deps-clean-cache
 ```
